@@ -241,6 +241,8 @@ class EatAndRunAgent(Agent):
                     if Directions.LEFT[Directions.LEFT[currentDirection]] in legal:
                         self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
                         return self.last
+            else:
+                return self.avoidGhost(state, currentDirection, legal)
 
     def foodWithin5(self, state, currentDirection, legal):
         cur = api.whereAmI(state)
@@ -293,7 +295,7 @@ class EatAndRunAgent(Agent):
             return True
         if api.atSide(api.ghosts(state), currentDirection, state):
             return True
-        if api.audible(api.ghosts, state):
+        if api.audible(api.ghosts(state), state):
             return True
         return False
     
@@ -305,41 +307,51 @@ class EatAndRunAgent(Agent):
                 self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
                 return self.last
 
-        for x in range(1, 6):
+        for x in range(1, 3):
             #north
-            if (cur[0], cur[1]+x) in api.food(state):
+            if (cur[0], cur[1]+x) in api.ghosts(state):
                 noWall = True
                 for y in range(cur[1], cur[1]+x+1):
                     if (cur[0], y) in api.walls(state):
                         noWall = False
                 if noWall:
-                    last = Directions.NORTH
-                    return Directions.NORTH
+                    last = Directions.SOUTH
+                    if last in legal:
+                        return last
             #south
-            if (cur[0], cur[1]-x) in api.food(state):
+            if (cur[0], cur[1]-x) in api.ghosts(state):
                 noWall = True
                 for y in range(cur[1]-x, cur[1]+1):
                     if (cur[0], y) in api.walls(state):
                         noWall = False
                 if noWall:
-                    last = Directions.SOUTH
-                    return Directions.SOUTH
+                    last = Directions.NORTH
+                    if last in legal:
+                        return last
             #east
-            if (cur[0]+x, cur[1]) in api.food(state):
+            if (cur[0]+x, cur[1]) in api.ghosts(state):
                 noWall = True
                 for y in range(cur[0], cur[1]+x+1):
                     if (y, cur[1]) in api.walls(state):
                         noWall = False
                 if noWall:
-                    last = Directions.EAST
-                    return Directions.EAST     
+                    last = Directions.WEST
+                    if last in legal:
+                        return last    
             #west
-            if (cur[0]-x, cur[1]) in api.food(state):
+            if (cur[0]-x, cur[1]) in api.ghosts(state):
                 noWall = True
                 for y in range(cur[0]-x, cur[0]+1):
                     if (y, cur[1]) in api.walls(state):
                         noWall = False
                 if noWall:
-                    last = Directions.WEST
-                    return Directions.WEST
-
+                    last = Directions.EAST
+                    if last in legal:
+                        return last
+        if currentDirection in legal:
+            return currentDirection
+        else:
+            if Directions.LEFT[Directions.LEFT[currentDirection]] in legal:
+                self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
+                return self.last
+        return self.last
