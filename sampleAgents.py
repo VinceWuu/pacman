@@ -26,7 +26,8 @@
 # The agents here are extensions written by Simon Parsons, based on the code in
 # pacmanAgents.py
 
-from operator import le
+from operator import le, truediv
+from re import search
 from pacman import Directions
 from game import Agent
 import api
@@ -147,7 +148,7 @@ class CornerSeekingAgent(Agent):
         currentDirection = state.getPacmanState().configuration.direction
         
         if len(legal) > 3 and api.whereAmI(state) in self.visited:
-            return self.foodWithin3(state, currentDirection, legal)
+            return self.foodWithin5(state, currentDirection, legal)
         else:
 
             self.visited.append(api.whereAmI(state))
@@ -166,10 +167,10 @@ class CornerSeekingAgent(Agent):
                 self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
                 return self.last
 
-    def foodWithin3(self, state, currentDirection, legal):
+    def foodWithin5(self, state, currentDirection, legal):
         cur = api.whereAmI(state)
 
-        for x in range(1, 4):
+        for x in range(1, 6):
             #north
             if (cur[0], cur[1]+x) in api.food(state):
                 noWall = True
@@ -210,5 +211,135 @@ class CornerSeekingAgent(Agent):
         legal.remove(Directions.STOP)
         self.last = random.choice(legal)
         return self.last
+
+class EatAndRunAgent(Agent):
+
+    def __init__(self):
+        self.last = Directions.STOP
+        self.visited = []
+
+    def getAction(self, state):
+            legal = api.legalActions(state)
+            currentDirection = state.getPacmanState().configuration.direction
+            if not self.ghostNearBy(state, currentDirection):
+                if len(legal) > 3 and api.whereAmI(state) in self.visited:
+                    return self.foodWithin5(state, currentDirection, legal)
+                else:
+
+                    self.visited.append(api.whereAmI(state))
+                    if currentDirection == Directions.STOP:
+                        currentDirection = Directions.NORTH
+                    if Directions.LEFT[currentDirection] in legal:
+                        self.last = Directions.LEFT[currentDirection]
+                        return self.last
+                    if currentDirection in legal:
+                        self.last = currentDirection
+                        return self.last
+                    if Directions.RIGHT[currentDirection] in legal:
+                        self.last = Directions.RIGHT[currentDirection]
+                        return self.last
+                    if Directions.LEFT[Directions.LEFT[currentDirection]] in legal:
+                        self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
+                        return self.last
+
+    def foodWithin5(self, state, currentDirection, legal):
+        cur = api.whereAmI(state)
+
+        for x in range(1, 6):
+            #north
+            if (cur[0], cur[1]+x) in api.food(state):
+                noWall = True
+                for y in range(cur[1], cur[1]+x+1):
+                    if (cur[0], y) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.NORTH
+                    return Directions.NORTH
+            #south
+            if (cur[0], cur[1]-x) in api.food(state):
+                noWall = True
+                for y in range(cur[1]-x, cur[1]+1):
+                    if (cur[0], y) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.SOUTH
+                    return Directions.SOUTH
+            #east
+            if (cur[0]+x, cur[1]) in api.food(state):
+                noWall = True
+                for y in range(cur[0], cur[1]+x+1):
+                    if (y, cur[1]) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.EAST
+                    return Directions.EAST
+            #west
+            if (cur[0]-x, cur[1]) in api.food(state):
+                noWall = True
+                for y in range(cur[0]-x, cur[0]+1):
+                    if (y, cur[1]) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.WEST
+                    return Directions.WEST
+
+        legal.remove(Directions.STOP)
+        self.last = random.choice(legal)
+        return self.last
+
+    def ghostNearBy(self, state, currentDirection):
         
+        if api.inFront(api.ghosts(state), currentDirection, state):
+            return True
+        if api.atSide(api.ghosts(state), currentDirection, state):
+            return True
+        if api.audible(api.ghosts, state):
+            return True
+        return False
     
+    def avoidGhost(self, state, currentDirection, legal):
+        cur = api.whereAmI(state)
+        # if ghosts are in front then turn back 
+        if api.inFront(api.ghosts(state), currentDirection, state):
+            if Directions.LEFT[Directions.LEFT[currentDirection]] in legal:
+                self.last = Directions.LEFT[Directions.LEFT[currentDirection]]
+                return self.last
+
+        for x in range(1, 6):
+            #north
+            if (cur[0], cur[1]+x) in api.food(state):
+                noWall = True
+                for y in range(cur[1], cur[1]+x+1):
+                    if (cur[0], y) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.NORTH
+                    return Directions.NORTH
+            #south
+            if (cur[0], cur[1]-x) in api.food(state):
+                noWall = True
+                for y in range(cur[1]-x, cur[1]+1):
+                    if (cur[0], y) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.SOUTH
+                    return Directions.SOUTH
+            #east
+            if (cur[0]+x, cur[1]) in api.food(state):
+                noWall = True
+                for y in range(cur[0], cur[1]+x+1):
+                    if (y, cur[1]) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.EAST
+                    return Directions.EAST     
+            #west
+            if (cur[0]-x, cur[1]) in api.food(state):
+                noWall = True
+                for y in range(cur[0]-x, cur[0]+1):
+                    if (y, cur[1]) in api.walls(state):
+                        noWall = False
+                if noWall:
+                    last = Directions.WEST
+                    return Directions.WEST
+
