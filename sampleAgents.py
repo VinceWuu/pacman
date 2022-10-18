@@ -348,6 +348,7 @@ class EatAndRunAgent(Agent):
                     last = Directions.EAST
                     if last in legal:
                         return last
+        legal.remove(Directions.STOP)
         if currentDirection in legal:
             return currentDirection
         else:
